@@ -1,5 +1,12 @@
-import { useState, type JSX } from "react";
+import { useState } from "react";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import css from "./App.module.css";
+import { fetchNotes, deleteNote } from "../../services/noteService";
 import SearchBox from "../SearchBox/SearchBox";
 import PaginationComp from "../Pagination/Pagination";
 import NoteList from "../NoteList/NoteList";
@@ -9,13 +16,35 @@ import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 
 const PER_PAGE = 12;
 
-export default function App(): JSX.Element {
-  const [page, setPage] = useState<number>(1);
-  const [search, setSearch] = useState<string>("");
+export default function App() {
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search, 500);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [totalPages, setTotalPages] = useState(1);
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["notes", page, PER_PAGE, debouncedSearch],
+    queryFn: () =>
+      fetchNotes({ page, perPage: PER_PAGE, search: debouncedSearch }),
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 30,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteNote(id),
+    onSuccess: () => {
+      // інвалюємо всі ключі, що починаються з "notes"
+      queryClient.invalidateQueries({ queryKey: ["notes"], exact: false });
+    },
+  });
+
+  if (isLoading) return <p>Loading...</p>;
+  if (isError) return <p>Error loading notes</p>;
+
+  const notes = data?.notes ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   return (
     <div className={css.app}>
@@ -27,25 +56,22 @@ export default function App(): JSX.Element {
             setPage(1);
           }}
         />
+
         <PaginationComp
-          page={page}
-          onChangePage={(p) => setPage(p)}
-          perPage={PER_PAGE}
-          search={debouncedSearch}
+          // узгоджені імена пропсів: currentPage / onPageChange / totalPages
+          currentPage={page}
+          onPageChange={(p) => setPage(p)}
           totalPages={totalPages}
         />
+
         <button className={css.button} onClick={() => setIsModalOpen(true)}>
           Create note +
         </button>
       </header>
 
-      <main className={css.main}>
-        <NoteList
-          page={page}
-          perPage={PER_PAGE}
-          search={debouncedSearch}
-          onTotalPagesChange={setTotalPages}
-        />
+      <main>
+        {/* NoteList тепер отримує масив нотаток і callback для видалення */}
+        <NoteList notes={notes} onDelete={(id) => deleteMutation.mutate(id)} />
       </main>
 
       {isModalOpen && (
