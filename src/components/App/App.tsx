@@ -48,7 +48,9 @@ export default function App() {
             totalPages={totalPages}
           />
         )}
-        <button onClick={() => setIsModalOpen(true)}>Create note +</button>
+        <button className={css.btn} onClick={() => setIsModalOpen(true)}>
+          Create note +
+        </button>
       </header>
 
       <main>
