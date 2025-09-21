@@ -56,13 +56,8 @@ export default function App() {
       </header>
 
       <main>
-        {notes.length > 0 ? (
-          <NoteList page={page} perPage={PER_PAGE} search={debouncedSearch} />
-        ) : (
-          <p>No notes yet</p>
-        )}
+        {notes.length > 0 ? <NoteList notes={notes} /> : <p>No notes yet</p>}
       </main>
-
       {isModalOpen && (
         <Modal onClose={() => setIsModalOpen(false)}>
           <NoteForm
