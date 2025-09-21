@@ -9,6 +9,8 @@ import NoteList from "../NoteList/NoteList";
 import Modal from "../Modal/Modal";
 import NoteForm from "../NoteForm/NoteForm";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
+import Loader from "../Loader/Loader";
+import ErrorMessage from "../ErrorMessage/ErrorMessage";
 
 const PER_PAGE = 12;
 
@@ -25,8 +27,8 @@ export default function App() {
     placeholderData: (prev) => prev,
   });
 
-  if (isLoading) return <p>Loading...</p>;
-  if (isError) return <p>Error loading notes</p>;
+  if (isLoading) return <Loader />;
+  if (isError) return <ErrorMessage />;
 
   const notes: Note[] = data?.notes ?? [];
   const totalPages = data?.totalPages ?? 1;
