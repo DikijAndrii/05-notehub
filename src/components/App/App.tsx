@@ -1,12 +1,8 @@
 import { useState } from "react";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  keepPreviousData,
-} from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import css from "./App.module.css";
-import { fetchNotes, deleteNote } from "../../services/noteService";
+import { fetchNotes } from "../../services/noteService";
+import type { Note } from "../../types/note";
 import SearchBox from "../SearchBox/SearchBox";
 import PaginationComp from "../Pagination/Pagination";
 import NoteList from "../NoteList/NoteList";
@@ -22,28 +18,17 @@ export default function App() {
   const debouncedSearch = useDebouncedValue(search, 500);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const queryClient = useQueryClient();
-
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["notes", page, PER_PAGE, debouncedSearch],
+    queryKey: ["notes", { page, perPage: PER_PAGE, search: debouncedSearch }],
     queryFn: () =>
       fetchNotes({ page, perPage: PER_PAGE, search: debouncedSearch }),
-    placeholderData: keepPreviousData,
-    staleTime: 1000 * 30,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteNote(id),
-    onSuccess: () => {
-      // інвалюємо всі ключі, що починаються з "notes"
-      queryClient.invalidateQueries({ queryKey: ["notes"], exact: false });
-    },
+    placeholderData: (prev) => prev,
   });
 
   if (isLoading) return <p>Loading...</p>;
   if (isError) return <p>Error loading notes</p>;
 
-  const notes = data?.notes ?? [];
+  const notes: Note[] = data?.notes ?? [];
   const totalPages = data?.totalPages ?? 1;
 
   return (
@@ -56,22 +41,22 @@ export default function App() {
             setPage(1);
           }}
         />
-
-        <PaginationComp
-          // узгоджені імена пропсів: currentPage / onPageChange / totalPages
-          currentPage={page}
-          onPageChange={(p) => setPage(p)}
-          totalPages={totalPages}
-        />
-
-        <button className={css.button} onClick={() => setIsModalOpen(true)}>
-          Create note +
-        </button>
+        {totalPages > 1 && (
+          <PaginationComp
+            currentPage={page}
+            onPageChange={(p) => setPage(p)}
+            totalPages={totalPages}
+          />
+        )}
+        <button onClick={() => setIsModalOpen(true)}>Create note +</button>
       </header>
 
       <main>
-        {/* NoteList тепер отримує масив нотаток і callback для видалення */}
-        <NoteList notes={notes} onDelete={(id) => deleteMutation.mutate(id)} />
+        {notes.length > 0 ? (
+          <NoteList page={page} perPage={PER_PAGE} search={debouncedSearch} />
+        ) : (
+          <p>No notes yet</p>
+        )}
       </main>
 
       {isModalOpen && (
