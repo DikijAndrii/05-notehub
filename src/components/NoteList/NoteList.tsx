@@ -6,7 +6,7 @@ import type { Note } from "../../types/note";
 interface NoteListProps {
   page: number;
   perPage: number;
-  search?: string;
+  search: string;
 }
 
 export default function NoteList({ page, perPage, search }: NoteListProps) {

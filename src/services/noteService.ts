@@ -11,9 +11,9 @@ export const api = axios.create({
 });
 
 export interface FetchNotesParams {
-  page?: number;
-  perPage?: number;
-  search?: string;
+  page: number;
+  perPage: number;
+  search: string;
 }
 
 export interface FetchNotesResponse {
